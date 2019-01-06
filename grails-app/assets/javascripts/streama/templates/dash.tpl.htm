@@ -6,8 +6,8 @@
 
     <div uis-owl-carousel class="new-releases-slider" >
       <div ng-repeat="newRelease in vm.newReleases" class="new-releases-slide">
-        <img class="poster-image" ng-src="https://image.tmdb.org/t/p/w342/{{newRelease.media.poster_path}}" class="pull-left">
-        <div class="image-background" style="background-image: url('https://image.tmdb.org/t/p/w1280/{{newRelease.media.backdrop_path}}')">
+        <img class="poster-image" ng-src="../images/t/p/w342/{{newRelease.media.poster_path}}" class="pull-left">
+        <div class="image-background" style="background-image: url('../images/t/p/w1280/{{newRelease.media.backdrop_path}}')">
           <i class="info-icon ion-ios-information" ng-click="vm.showDetails(newRelease.media)"></i>
           <div class="new-release-footer">
             <a class="play-icon ion-ios-play" ui-sref="player({videoId: newRelease.videoToPlayId})"></a>

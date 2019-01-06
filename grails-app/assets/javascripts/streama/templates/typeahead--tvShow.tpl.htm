@@ -1,5 +1,5 @@
 <a>
-  <img ng-show="match.model.poster_path" ng-src="https://image.tmdb.org/t/p/w92/{{match.model.poster_path}}" width="60px"/>
+  <img ng-show="match.model.poster_path" ng-src="../images/t/p/w92/{{match.model.poster_path}}" width="60px"/>
   <img ng-show="!match.model.poster_path" ng-src="/assets/poster-not-found.png" width="60px"/>
   &nbsp;
   <span ng-bind-html="match.model.name | uibTypeaheadHighlight:query"></span>
