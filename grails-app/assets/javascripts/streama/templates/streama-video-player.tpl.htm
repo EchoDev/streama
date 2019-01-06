@@ -137,7 +137,7 @@
 
                     <div class="extra-episode-info" ng-if="visible || (episode.episode_number == video.episode_number && episode.season_number == video.season_number)">
                       <div class="image-wrapper">
-                        <img ng-if="episode.still_path" ng-src="https://image.tmdb.org/t/p/w92/{{episode.still_path}}"/>
+                        <img ng-if="episode.still_path" ng-src="../images/t/p/w92/{{episode.still_path}}"/>
                         <img ng-if="!episode.still_path && episode.still_image_src" ng-src="{{episode.still_image_src}}"/>
                         <div ng-if="!episode.still_path && !episode.still_image_src" class="fallback-image"></div>
                       </div>
