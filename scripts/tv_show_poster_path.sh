@@ -21,4 +21,8 @@ fi
 if [ ! -f $FOLDER/images/t/p/w154$entry ]; then
 wget 'https://image.tmdb.org/t/p/w154'$entry -O $FOLDER/images/t/p/w154$entry
 fi
+
+if [ ! -f $FOLDER/images/t/p/w92$entry ]; then
+wget 'https://image.tmdb.org/t/p/w92'$entry -O $FOLDER/images/t/p/w92$entry
+fi
 done
