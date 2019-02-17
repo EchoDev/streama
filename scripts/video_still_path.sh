@@ -14,6 +14,10 @@ if [ ! -f $FOLDER/images/t/p/w300$entry ]; then
 wget 'https://image.tmdb.org/t/p/w300'$entry -O $FOLDER/images/t/p/w300$entry
 fi
 
+if [ ! -f $FOLDER/images/t/p/w500$entry ]; then
+wget 'https://image.tmdb.org/t/p/w500'$entry -O $FOLDER/images/t/p/w500$entry
+fi
+
 if [ ! -f $FOLDER/images/t/p/w92$entry ]; then
 wget 'https://image.tmdb.org/t/p/w92'$entry -O $FOLDER/images/t/p/w92$entry
 fi
