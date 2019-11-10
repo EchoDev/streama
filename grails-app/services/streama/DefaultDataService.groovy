@@ -162,11 +162,29 @@ class DefaultDataService {
             validationRequired: false
         ],
         [
+            settingsKey: 'All Users can download (otherwise only Trusted)',
+            name: 'player_downloadForAllUsers',
+            description: 'If the download feature is enabled, by default only users with the role "Trusted User" can download videos. With this checkmark you can allow all users to download',
+            settingsType: 'boolean',
+            value: 'false',
+            required: false,
+            validationRequired: false
+        ],
+        [
             settingsKey: 'Hidden Dash sections',
             name: 'hidden_dash_sections',
             description: 'You can here add a comma-separted list of all the dash sections you would like to hide. To find out the name, check for vm.isDashSectionHidden(\'SECTION-NAME\'). example value: "continue-watching,new-releases"',
             settingsType: 'string',
             value: '',
+            required: false,
+            validationRequired: false
+        ],
+		[
+            settingsKey: 'Guess Subtitle Label',
+            name: 'guess_subtitle_label',
+            description: 'Tries to guess the subtitle label automatically when adding a \'.vtt\' or \'.srt\' file. This is the default behaviour, to change it, change the \'subtitles\' regex in \'application.yml\'',
+            settingsType: 'boolean',
+            value: 'false',
             required: false,
             validationRequired: false
         ],

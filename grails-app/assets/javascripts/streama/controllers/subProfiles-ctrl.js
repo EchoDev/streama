@@ -20,9 +20,9 @@ angular.module('streama').controller('subProfilesCtrl',
       '488f16','d36e10','4b4b4b','3a328b','b81f1f'
     ];
 
-    profileService.getUserProfiles().success(
+    profileService.getUserProfiles().then(
       function(data) {
-        $scope.existingProfiles = data;
+        $scope.existingProfiles = data.data;
       }
     );
     $scope.setCurrentProfile = profileService.setCurrentProfile;
@@ -62,14 +62,12 @@ angular.module('streama').controller('subProfilesCtrl',
       if(!$scope.profile.id){
         return;
       }
-      apiService.profile.delete($scope.profile.id)
-        .success(function () {
+      apiService.profile.delete($scope.profile.id).then(function () {
           alertify.success('Profile Deleted!');
           $scope.getAllProfiles();
           $scope.loading = false;
           $scope.refreshStates();
-        })
-        .error(function (data) {
+        }, function (data) {
           alertify.error(data.message);
           $scope.loading = false;
         });
@@ -90,26 +88,22 @@ angular.module('streama').controller('subProfilesCtrl',
       }else {
         saveProfileEndpoint = apiService.profile.save;
       }
-      saveProfileEndpoint($scope.profile)
-        .success(function () {
+      saveProfileEndpoint($scope.profile).then(function () {
           alertify.success($scope.profile.id ? 'Profile Updated!' : 'Profile Created!');
           $scope.getAllProfiles();
           $scope.loading = false;
           $rootScope.$broadcast('streama.profiles.onChange');
-        })
-        .error(function (data) {
+        }, function (data) {
           alertify.error(data.message);
           $scope.loading = false;
         });
     };
 
     $scope.getAllProfiles = function () {
-      apiService.profile.getUserProfiles()
-        .success(function (data) {
-          $scope.existingProfiles = data;
+      apiService.profile.getUserProfiles().then(function (data) {
+          $scope.existingProfiles = data.data;
           $scope.refreshStates();
-        })
-        .error(function (data) {
+        }, function (data) {
           alertify.error(data.message);
           $scope.loading = false;
         });

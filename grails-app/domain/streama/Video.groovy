@@ -25,7 +25,7 @@ class Video implements SimpleInstance{
   String imdb_id
 
   static hasMany = [files: File]
-  static simpleInstanceFields = ['overview', 'poster_path:posterPath', 'fullTitle']
+  static simpleInstanceFields = ['overview', 'poster_path:posterPath', 'title']
 
   static mapping = {
     cache true
@@ -58,16 +58,10 @@ class Video implements SimpleInstance{
 
     Episode episode = (Episode) this
 
-    Video nextEpisode = episode.show.episodes?.find{
-      return (it.episode_number == episode.episode_number+1 && it.season_number == episode.season_number && !it.deleted)
-    }
-    if(!nextEpisode){
-      nextEpisode = episode.show.episodes?.find{
-        return (it.season_number == episode.season_number+1 && it.episode_number == 1 && !it.deleted)
-      }
-    }
+    def allEpisodesForTvShow = episode.show.episodes
+    Video nextEpisode = allEpisodesForTvShow.findAll{it.seasonEpisodeMerged > episode.seasonEpisodeMerged && !it.deleted && it.getVideoFiles()}.min{it.seasonEpisodeMerged}
 
-    if(nextEpisode && nextEpisode.files){
+    if(nextEpisode && nextEpisode.getVideoFiles()){
       return nextEpisode
     }
   }
@@ -93,11 +87,11 @@ class Video implements SimpleInstance{
     }
   }
 
-  def getVideoFiles(){
-    return this.files?.findAll{it.extension != '.srt' && it.extension != '.vtt'}
+  Set<File> getVideoFiles(){
+    return this.files?.findAll{it.extension != '.srt' && it.extension != '.vtt'} ?: []
   }
-  def getSubtitles(){
-    return this.files?.findAll{it.extension == '.srt' || it.extension == '.vtt'}
+  Set<File> getSubtitles(){
+    return this.files?.findAll{it.extension == '.srt' || it.extension == '.vtt'} ?: []
   }
 
   def addLocalFile(localFilePath){
@@ -131,15 +125,20 @@ class Video implements SimpleInstance{
     def result
 
     if (this instanceof Movie) {
-
-      Movie tmp_movie=Movie.find{
-        ((id!=this.id) && (genre.id in this.genre.id ) && deleted==this.deleted && id != this.id &&  id > this.id)}
-      if(tmp_movie == null){
-        result =  Movie.find{ ((id!=this.id) && (genre.id in this.genre.id ) && deleted==this.deleted && id != this.id &&  id < this.id)}
-      }else{
-        result =  tmp_movie
+      if(!this.genre){
+        return
       }
+      def firstGenre = this.genre?.getAt(0)
+
+      List<Movie> allOtherMovies = Movie.where{
+        id != this.id
+        isNotEmpty("files")
+        deleted != true
+      }.list()
+
+      result = allOtherMovies.max{ it.genre*.id?.intersect(this.genre*.id)?.size()}  //TODO: how big of a performance impact does this have for a large DB? need to test
     }
+
     if (this instanceof Episode) {
       if(this.show?.genre){
         TvShow tmp
@@ -162,5 +161,14 @@ class Video implements SimpleInstance{
     }else{
       return this.poster_path
     }
+  }
+
+
+  File getDefaultVideoFile(){
+    def videoFiles = getVideoFiles()
+    if(!videoFiles){
+      return
+    }
+    return videoFiles.find{it.isDefault} ?: videoFiles[0]
   }
 }

@@ -5,6 +5,15 @@ angular.module('streama')
 
 function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadService, dialogOptions, modalService, $state) {
   var vm = this;
+  var STATUS_NO_MATCH = 0;
+  var STATUS_MATCH_FOUND = 1;
+  var STATUS_EXISTING = 2;
+  var STATUS_CREATED = 3;
+  var STATUS_LIMIT_REACHED = 4;
+  var STATUS_EXISTING_FOR_SUBTITLE = 5;
+  var STATUS_SUBTITLE_MATCH = 6;
+  var STATUS_SUBTITLE_ADDED = 7;
+
 	vm.loading = false;
 	vm.localFilesEnabled = false;
 	vm.localFiles = [];
@@ -23,12 +32,14 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
 	vm.toggleSelection = toggleSelection;
 	vm.toggleDirectorySelection = toggleDirectorySelection;
 	vm.getMatchForPath = getMatchForPath;
+	vm.getMatchDisplay = getMatchDisplay;
 	vm.selection = [];
   vm.addAllMatches = addAllMatches;
   vm.addSelectedFile = addSelectedFile;
   vm.openMediaDetail = openMediaDetail;
   vm.openAdminForm = openAdminForm;
   vm.isSelected = isSelected;
+  vm.hasStatus = hasStatus;
 
 
 	init();
@@ -39,7 +50,7 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
 	}
 
 	function openAdminForm(mediaObject) {
-		var url = $state.href('admin.' + mediaObject.importedType, {showId: mediaObject.importedId, movieId: mediaObject.importedId});
+		var url = $state.href('admin.' + mediaObject.importedType, {showId: mediaObject.importedId, movieId: mediaObject.importedId, season:  mediaObject.season});
 		window.open(url,'_blank');
 	}
 
@@ -52,10 +63,11 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
 	}
 
 	function loadLocalFiles(path) {
-		apiService.file.localFiles(path).success(function(data) {
+		apiService.file.localFiles(path).then(function(response) {
+			var data = response.data;
 			vm.localFilesEnabled = true;
 			vm.localFiles = data;
-		}).error(function(data) {
+		}, function(data) {
 			if (data.code == 'LocalFilesNotEnabled') {
 				vm.localFilesEnabled = false;
 			}
@@ -76,7 +88,8 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
     dir.showFiles = (dir.showFiles == true && !forceOpen) ? false : true;
     if(!dir.localFiles || !dir.localFiles.length){
 			dir.localFiles = [];
-			apiService.file.localFiles(dir.path).success(function(data) {
+			apiService.file.localFiles(dir.path).then(function(response) {
+				var data = response.data;
 				dir.localFiles = data;
 				(onSuccess || angular.noop)(data);
 			});
@@ -101,11 +114,12 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
 		vm.isMatcherLoading = true;
     vm.matchResult = null;
 		var fileSelection = _.filter(vm.selection, {directory: false});
-		apiService.file.matchMetaDataFromFiles(fileSelection).success(function (data) {
+		apiService.file.matchMetaDataFromFiles(fileSelection).then(function (response) {
+			var data = response.data;
 			vm.isMatcherLoading = false;
 			vm.matchResult = data;
 			//console.log(data);
-      deselectByStatus(2);
+      deselectByStatus(STATUS_EXISTING);
 		});
 	}
 
@@ -122,6 +136,7 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
 	}
 
 	function toggleDirectorySelection(directory) {
+		directory.isSelected = !directory.isSelected;
 	  if(directory.isSelected){
       openLocalDirectory(directory, true, function () {
         _.forEach(directory.localFiles, function (file) {
@@ -141,29 +156,46 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
 		return _.find(vm.matchResult, {file: path});
 	}
 
+	function getMatchDisplay(file) {
+		var match =_.find(vm.matchResult, {file: file.path});
+		if(match.type === 'episode'){
+			return match.showName + ' ' + 'S'+ _.padStart(match.season, 2, "0") +'E'+  _.padStart( match.episodeNumber, 2, "0")
+		}
+
+		if(match.type === 'movie'){
+			return match.title + ' (' + match.release_date.substring(0, 4)  + ')'
+		}
+		console.log('%c match', 'color: deeppink; font-weight: bold; text-shadow: 0 0 5px deeppink;', match);
+
+	}
+
 
 
   function addAllMatches() {
-		var allFoundMatches = _.filter(vm.matchResult, {status: 1});
+		var allFoundMatches = _.filter(vm.matchResult, function (match) {
+			return (match.status === STATUS_MATCH_FOUND || match.status === STATUS_EXISTING_FOR_SUBTITLE || match.status === STATUS_SUBTITLE_MATCH)
+		});
 		if(allFoundMatches.length == 0){
 			alertify.success('Nothing to add.');
 		}
 
-    apiService.file.bulkAddMediaFromFile(allFoundMatches).success(function (result) {
-      if(_.some(result, {status: 4})){
+    apiService.file.bulkAddMediaFromFile(allFoundMatches).then(function (response) {
+			var data = response.data;
+      if(_.some(data, {status: STATUS_LIMIT_REACHED})){
         alertify.log("not all files were added unfortunately. This is due to TheMovieDB API LIMIT constraints. Just try again in a couple of seconds :). ")
       }else{
         alertify.success("All matches have been added to the database and files connected");
       }
-      mergeMatchResults(result);
+      mergeMatchResults(data);
     });
 
   }
 
 	function addSelectedFile(file) {
     var fileMatch = _.find(vm.matchResult, {"file": file.path});
-    apiService.file.bulkAddMediaFromFile([fileMatch]).success(function (result) {
-      if(_.some(result, {status: 4})){
+    apiService.file.bulkAddMediaFromFile([fileMatch]).then(function (response) {
+			var result = response.data;
+      if(_.some(result, {status: STATUS_LIMIT_REACHED})){
         alertify.log("not all files were added unfortunately. This is due to TheMovieDB API LIMIT constraints. Just try again in a couple of seconds :) ")
       }else{
         alertify.success(fileMatch.title || fileMatch.episodeName + " has been added");
@@ -177,7 +209,7 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
       return _.find(result, {file: match.file}) || match;
     });
 
-    deselectByStatus(3);
+    deselectByStatus(STATUS_CREATED);
   }
 
 
@@ -187,5 +219,13 @@ function modalCreateFromFileCtrl($scope, $uibModalInstance, apiService, uploadSe
       toggleSelection(localFile);
     });
   }
+
+  function hasStatus(file, status) {
+		var matchForPath = getMatchForPath(file.path);
+		if(!matchForPath){
+			return false;
+		}
+		return (matchForPath.status === status);
+	}
 
 }

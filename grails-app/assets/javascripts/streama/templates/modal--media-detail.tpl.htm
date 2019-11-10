@@ -4,6 +4,11 @@
     <div class="col-xs-10">
       <legend>
         {{media.name || media.title || media.showName}}
+
+        <a ng-if="$root.isDownloadButtonVisible && mediaType == 'movie'"
+          href="{{media.videoFiles[0].src}}" download="{{media.videoFiles[0].originalFilename}}">
+        <i class="ion-android-download" style="font-size: 24px;"></i>
+      </a>
       </legend>
     </div>
     <div class="col-xs-2">
@@ -90,18 +95,23 @@
 
    <div class="season-picker-list">
     <span class="season-picker-item" ng-class="{'active': currentSeason == season}" ng-click="setCurrentSeason(season)"
-          ng-repeat="(season, episodes) in seasons | orderBy:'season'">
+          ng-repeat="season in seasons | orderBy:number">
       {{'VIDEO.SEASON' | translate}} {{season}}
     </span>
    </div>
 
    <div class="media-list">
      <div class="media-list-item episode-wrapper" style="padding-bottom: 8px;"
-          ng-repeat="episode in seasons[currentSeason] | orderBy:'episode_number'"
+          ng-repeat="episode in listEpisodesForSeason(currentSeason) | orderBy:'episode_number'"
           ng-class="{'no-files': !episode.hasFile}">
        <h3 class="media-episode-string">
          <span ng-show="episode.episodeString">{{episode.episodeString}}</span>
          <span ng-show="!episode.episodeString">s{{episode.season_number | padnumber:2}}e{{episode.episode_number | padnumber:2}}</span>
+
+         <a class="pull-right" ng-if="$root.isDownloadButtonVisible"
+            href="{{episode.videoFiles[0].src}}" download="{{episode.videoFiles[0].originalFilename}}">
+           <i class="ion-android-download" style="font-size: 24px;"></i>
+         </a>
        </h3>
        <h3 class="media-title">{{episode.name}}</h3>
        <div class="media-item" >

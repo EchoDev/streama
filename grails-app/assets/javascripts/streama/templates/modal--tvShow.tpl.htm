@@ -3,7 +3,7 @@
   <div class="modal-body">
     <legend>
       New Show
-      <button class="btn btn-sm btn-white btn-outline pull-right" ng-show="hasKey" ng-click="toggleAddManually()">
+      <button class="btn btn-sm btn-white btn-outline pull-right" ng-show="hasMovieDBKey" ng-click="toggleAddManually()">
         <span ng-show="!tvShow.manualInput">Add Manually</span>
         <span ng-show="tvShow.manualInput">Add Automatically</span>
       </button>
@@ -49,6 +49,12 @@
         </div>
       </div>
       </div>
+      <div class="form-group row-slim">
+        <div class="col-sm-3">
+          <label>Timestamp Added</label>
+          <input type="text" class="form-control input-sm" ng-model="tvShow.dateCreated"/>
+        </div>
+      </div>
 
       <div class="form-group">
         <div class="col-sm-12">
@@ -61,11 +67,14 @@
         <div class="form-group">
           <div class="col-sm-12">
             <label>Genre</label>
-            <ul class="genre-list">
-              <li class="genre-tag" ng-repeat="genre in tvShow.genre">
-                {{genre.name}}
-              </li>
-            </ul>
+            <ui-select class="tag-select" multiple ng-model="tvShow.genre" theme="bootstrap" title="Add Genre">
+              <ui-select-match placeholder="Select Genre...">{{$item.name}}</ui-select-match>
+              <ui-select-choices repeat="genre in genres | propsFilter: {name: $select.search}">
+                <div class="tag-wrapper">
+                  <div class="tag-name" ng-bind-html="genre.name + genre.isTag| highlight: $select.search"></div>
+                </div>
+              </ui-select-choices>
+            </ui-select>
           </div>
         </div>
       </div>

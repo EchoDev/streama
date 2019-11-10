@@ -10,8 +10,15 @@
 Ever had a huge bookshelf full of shows and movies? Ever wanted to digitalize them, but didn't have a good way of organizing the files? Worry no more! Streama is your own personal Netflix for just such a purpose!
 
 [![Visit the Promo Page](design/promo-page.png)](https://streamaserver.org/) 
-<img alt="streama live demo - currently not available" title="Currently no live Demo Available" src="design/live-demo-button.png" /> 
+[![Live Demo](design/live-demo-button.png)](https://demo.streamaserver.org/) 
 [![Streama on Google Play store](design/google-play-badge.jpg)](https://play.google.com/store/apps/details?id=dularion.streama) 
+
+## Live-Demo
+https://demo.streamaserver.org/  
+**credentials: username: demoUser | password: demoUser**  
+Feel free to play around there as much as you like (everything is reset at night)  
+We will keep this demo updated with our newest releases as they come, so that you can check out new features there first before deciding to deploy them in your own environments. 
+
 
 
 ## Donate
@@ -40,7 +47,7 @@ If you want to donate to the developer via bitcoin use 17rCUEX6KYQ8ZM4w39ttEUL7S
 - [License](#license)
 
 # Getting Started
-- [Installation and first-time setup](https://github.com/streamaserver/streama/wiki/Getting-started)
+- [Installation and first-time setup](https://streamaserver.org/getting-started/installing/)
 
 If you have any issues getting started, feel free to [chat with us on Discord](https://discord.gg/CJEHWX9). We are more than happy to assist and then improve the docs accordingly. 
 

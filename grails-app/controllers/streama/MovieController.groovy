@@ -17,7 +17,10 @@ class MovieController {
   }
 
   @Transactional
-  def save(Movie movieInstance) {
+  def save() {
+    def data = request.JSON
+    Movie movieInstance = data.id ? Movie.get(data.id) : new Movie()
+
     if (movieInstance == null) {
       render status: NOT_FOUND
       return
@@ -26,6 +29,21 @@ class MovieController {
     if (!movieInstance.imdb_id && movieInstance.apiId) {
       movieInstance.imdb_id = movieInstance.fullMovieMeta?.imdb_id
     }
+
+    List tags = []
+    data.tags?.each{ tagData ->
+      Tag tag = Tag.findByIdOrName(tagData.id, tagData.name)
+      if(!tag){
+        tag = new Tag(tagData)
+        tag.save(flush: true, failOnError: true)
+      }
+
+      tags.add(tag)
+    }
+
+    data.tags = tags*.id
+    movieInstance.properties = data
+    movieInstance.properties.dateCreated = data
 
     movieInstance.validate()
     if (movieInstance.hasErrors()) {

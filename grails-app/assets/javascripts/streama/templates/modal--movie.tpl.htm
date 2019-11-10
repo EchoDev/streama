@@ -51,8 +51,18 @@
           <div class="col-sm-2">
             <label>Outro Start</label>
             <input type="text" class="form-control input-sm" ng-model="movie.outro_start" video-time-format
-                   placeholder="0:0"/>
+                   placeholder="00:00:00 (time of outro start)"/>
           </div>
+        </div>
+      </div>
+      <div class="form-group row-slim">
+        <div class="col-sm-3">
+          <label>YouTube Trailer Key</label>
+          <input type="text" class="form-control input-sm" ng-model="movie.trailerKey"/>
+        </div>
+        <div class="col-sm-3">
+          <label>Timestamp Added</label>
+          <input type="text" class="form-control input-sm" ng-model="movie.dateCreated"/>
         </div>
       </div>
 
@@ -67,11 +77,14 @@
         <div class="form-group">
           <div class="col-sm-12">
             <label>Genre</label>
-            <ul class="genre-list">
-              <li class="genre-tag" ng-repeat="genre in movie.genre">
-                {{genre.name}}
-              </li>
-            </ul>
+            <ui-select class="tag-select" multiple ng-model="movie.genre" theme="bootstrap" title="Add Genre">
+              <ui-select-match placeholder="Select Genre...">{{$item.name}}</ui-select-match>
+              <ui-select-choices repeat="genre in genres | propsFilter: {name: $select.search}">
+                <div class="tag-wrapper">
+                  <div class="tag-name" ng-bind-html="genre.name + genre.isTag| highlight: $select.search"></div>
+                </div>
+              </ui-select-choices>
+            </ui-select>
           </div>
         </div>
       </div>

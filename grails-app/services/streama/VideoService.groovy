@@ -15,6 +15,8 @@ class VideoService {
 
   def fileService
   def uploadService
+  def grailsApplication
+  def settingsService
 
   def deleteVideoAndAssociations(Video video) {
     video.setDeleted(true)
@@ -47,12 +49,6 @@ class VideoService {
 
         if (!previousShowEntry) {
           result.add(continueWatchingItem)
-        } else {
-          def previousIsLower = (previousShowEntry.video.seasonEpisodeMerged < continueWatchingItem.video.seasonEpisodeMerged)
-          if (previousShowEntry && previousIsLower) {
-            result.removeAll { it.id == previousShowEntry.id }
-            result.add(continueWatchingItem)
-          }
         }
       } else {
         result.add(continueWatchingItem)
@@ -101,6 +97,21 @@ class VideoService {
     file.size = Files.size(givenPath)
     def extensionIndex = params.localFile.lastIndexOf('.')
     file.extension = params.localFile[extensionIndex..-1];
+	
+	// Subtitle label guessing (by Norwelian)
+	if(settingsService.getValueForName('guess_subtitle_label')){
+	    def regexConfig = grailsApplication.config.streama?.regex
+		def subtitleNameRegex = regexConfig?.subtitles
+	    def matcher = file.localFile =~ subtitleNameRegex
+		if (matcher.getCount()) {
+			file.subtitleLabel = matcher[0][1].toUpperCase()
+		}
+	}
+	
+    if(videoInstance.videoFiles.size() == 0){
+      file.isDefault = true
+    }
+
     file.save(failOnError: true, flush: true)
     videoInstance.addToFiles(file)
     videoInstance.save(failOnError: true, flush: true)

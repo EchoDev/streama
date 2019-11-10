@@ -39,14 +39,9 @@ class TheMovieDbService {
     def jsonContentSimilarMovies = new URL(BASE_URL + "/movie/$movieId/similar?$API_PARAMS").getText("UTF-8")
     def jsonSimilarMovies = new JsonSlurper().parseText(jsonContentSimilarMovies)
     jsonSimilarMovies?.results?.each { Map similarMovie ->
+      similarMovie.genre = parseGenres(similarMovie.genre_ids)
       similarMovie.mediatype = "Movie"
-      try{
-        def jsonContentTrailer = new URL(BASE_URL + "/movie/$similarMovie.id/videos?$API_PARAMS").getText("UTF-8")
-        def jsonTrailerData = new JsonSlurper().parseText(jsonContentTrailer)
-        similarMovie.trailerKey = jsonTrailerData?.results[0]?.key
-      }catch (e){
-        log.error(e.message)
-      }
+      similarMovie.trailerKey = getTrailerForMovie(similarMovie.id)?.key
 
     }
     return jsonSimilarMovies
@@ -99,11 +94,16 @@ class TheMovieDbService {
   }
 
   def getTrailerForMovie(movieId){
-    def JsonContent = new URL(BASE_URL + "/movie/$movieId/videos?$API_PARAMS").getText("UTF-8")
-    def videos =  new JsonSlurper().parseText(JsonContent).results
+    try{
+      def JsonContent = new URL(BASE_URL + "/movie/$movieId/videos?$API_PARAMS").getText("UTF-8")
+      def videos =  new JsonSlurper().parseText(JsonContent).results
 
-    def trailer = videos.findAll{it.type == "Trailer"}.max{it.size}
-    return trailer
+      def trailer = videos.findAll{it.type == "Trailer"}.max{it.size}
+      return trailer
+    }
+    catch (e){
+      log.error("problem during getTrailerForMovie for ${movieId}")
+    }
   }
 
   def getFullMovieMeta(movieId){
@@ -126,21 +126,42 @@ class TheMovieDbService {
   }
 
   def getEpisodeMeta(tvApiId, seasonNumber, episodeNumber){
-    def JsonContent = new URL(BASE_URL + "/tv/$tvApiId/season/$seasonNumber/episode/$episodeNumber?$API_PARAMS").getText("UTF-8")
+    def requestUrl = BASE_URL + "/tv/$tvApiId/season/$seasonNumber/episode/$episodeNumber?$API_PARAMS"
+    URL url = new URL(requestUrl)
+    HttpURLConnection conn = url.openConnection()
+    if(conn.responseCode != 200){
+      throw new Exception("TMDB request failed with statusCode: " + conn?.responseCode + ", responseMessage: " + conn?.responseMessage + ", url: " + requestUrl)
+    }
+    def JsonContent = url.getText("UTF-8")
     return new JsonSlurper().parseText(JsonContent)
   }
 
-  def searchForEntry(type, name) {
+  def searchForEntry(type, name, String year = null) {
 
     def cachedApiData = apiCacheData."$type:$name"
-    if(cachedApiData){
+    if(false && cachedApiData){
       return cachedApiData
     }
     def query = URLEncoder.encode(name, "UTF-8")
 
-    def JsonContent = new URL(BASE_URL + '/search/' + type + '?query=' + query + '&api_key=' + API_KEY).getText("UTF-8")
-    def data = new JsonSlurper().parseText(JsonContent)
-    apiCacheData["$type:$name"] = data
+
+    def requestUrl = BASE_URL + '/search/' + type + '?query=' + query + '&api_key=' + API_KEY
+    def data
+    URL url
+
+    try {
+      url = new URL(requestUrl)
+      def JsonContent = url.getText("UTF-8")
+      data = new JsonSlurper().parseText(JsonContent)
+      if(data.results?.size() > 1 && year){
+        data.results = data.results.findAll{it.release_date.take(4) == year}
+      }
+      apiCacheData["$type:$name"] = data
+    }
+    catch(e) {
+      HttpURLConnection conn = url.openConnection()
+      throw new Exception("TMDB request failed with statusCode: " + conn?.responseCode + ", responseMessage: " + conn?.responseMessage + ", url: " + requestUrl)
+    }
 
     return data
   }
@@ -168,7 +189,7 @@ class TheMovieDbService {
     try{
       entity = createEntityFromApiData(type, apiData)
     }catch (e){
-      log.error("Error occured while trying to retrieve data from TheMovieDB. Please check your API-Key.")
+      log.error("Error occured while trying to retrieve data from TheMovieDB: ${e.message}", e)
     }
     return entity
   }
@@ -187,7 +208,7 @@ class TheMovieDbService {
     }
     if(type == 'episode'){
       entity = new Episode()
-      TvShow tvShow = TvShow.findByApiId(data.tv_id)
+      TvShow tvShow = TvShow.findByApiIdAndDeletedNotEqual(data.tv_id, true)
       if(!tvShow){
         tvShow = createEntityFromApiId('tv', data.tv_id)
       }
@@ -196,8 +217,30 @@ class TheMovieDbService {
     }
 
     entity.properties = data
+    if(data.genres){
+      entity.genre = parseGenres(data.genres*.id)
+    }
+    if(type == 'movie'){
+      entity.trailerKey = getTrailerForMovie(apiId)?.key
+    }
     entity.apiId = apiId
+    if(entity instanceof Movie){
+      entity.imdb_id = entity.getFullMovieMeta()?.imdb_id
+    }
+    if(entity instanceof TvShow){
+      entity.imdb_id = entity.getExternalLinks()?.imdb_id
+    }
+
     entity.save(flush:true, failOnError:true)
     return entity
+  }
+
+  def parseGenres(movieDbGenres){
+    def streamaGenres = []
+    movieDbGenres.each{ metaGenre ->
+      Genre genre = Genre.findByApiId(metaGenre)
+      streamaGenres.add(genre)
+    }
+    return streamaGenres
   }
 }
